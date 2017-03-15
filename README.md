@@ -1,4 +1,4 @@
-!__HMScrollNavigationBar__
+__HMScrollNavigationBar__
 -----
 
 ![Pod Version](https://img.shields.io/cocoapods/v/HMScrollNavigationBar.svg)
@@ -28,9 +28,15 @@ HMScrollNavigationBar is available through [Carthage](https://github.com/Carthag
 
 ## Usage
 
-All you need is just setup the navigationBarManager.
+1. Prepare your view in IB.
+
+![InterfaceBuilder](resources/interface_builder.png)
+
+2. Setup your navigationBarManager.
 
 ![CodeExample!!](resources/code_example.png)
+
+3. Sit back and run your application.
 
 ## Contributors
 
