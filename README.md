@@ -1,0 +1,40 @@
+!__HMScrollNavigationBar__
+-----
+
+![Pod Version](https://img.shields.io/cocoapods/v/HMScrollNavigationBar.svg)
+![Pod License](https://img.shields.io/badge/license-MIT-blue.svg)
+[![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
+
+Probably everyone saw navigation bar in Facebook app, that is hiding or showing while scrolling your view. Now you can have the same feature!
+
+## Example
+
+![Scroll!!](resources/scroll.gif)
+
+## Installation
+
+### CocoaPods
+
+HMScrollNavigationBar is available through [CocoaPods](http://cocoapods.org).
+
+	pod 'HMScrollNavigationBar'
+
+### Carthage
+
+HMScrollNavigationBar is available through [Carthage](https://github.com/Carthage/Carthage).
+	
+	github "HandcraftedMobile/HMScrollNavigationBar"
+
+
+## Usage
+
+All you need is just setup the navigationBarManager.
+
+![CodeExample!!](resources/code_example.png)
+
+## Contributors
+
+
+## License
+
+MIT. See LICENSE file for details.
