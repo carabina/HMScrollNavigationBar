@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   s.platform     = :ios, "8.0"
   
   s.source       = { :git => "https://github.com/HandcraftedMobile/HMScrollNavigationBar.git", :tag => "1.0" }
-  #s.source       = { :git => "http://EXAMPLE/HMScrollNavigationBar.git", :tag => "1.0" }
+
   s.source_files  = "HMScrollNavigationBar"
   s.requires_arc = true
 

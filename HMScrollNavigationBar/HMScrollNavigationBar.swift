@@ -46,18 +46,19 @@ public protocol HMManagerSetup {
 
 //MARK: Implementation
 
-public class HMNavigationBarManager: NSObject, NavBarAnimatable {
+open class HMNavigationBarManager: NSObject, NavBarAnimatable {
+    
+    var application: UIApplication = UIApplication.shared
     
     var scrollView: UIScrollView?
     var navBar : UIView?
     
-    let statusBarHeight =  UIApplication.shared.statusBarFrame.size.height
+    lazy private(set) var statusBarHeight: CGFloat = self.application.statusBarFrame.size.height
     
-    let refreshControl = UIRefreshControl()
     var navBarHeight: CGFloat?
-    var lastScrollingOffsetY = 0 as CGFloat
-    var startDraggingOffsetY = 0 as CGFloat
-    var view: UIView! = nil
+    var lastScrollingOffsetY: CGFloat = 0
+    var startDraggingOffsetY: CGFloat = 0
+    var view: UIView?
     
     public func animateShowingNavBar() {
         UIView.animate(withDuration: 0.1, animations: {
