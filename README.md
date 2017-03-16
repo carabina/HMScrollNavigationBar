@@ -32,7 +32,7 @@ HMScrollNavigationBar is available through [Carthage](https://github.com/Carthag
 
 ![InterfaceBuilder](resources/interface_builder.png)
 
-2. Setup your navigationBarManager.
+2. Setup your navigationBarAnimator.
 
 ![CodeExample!!](resources/code_example.png)
 
