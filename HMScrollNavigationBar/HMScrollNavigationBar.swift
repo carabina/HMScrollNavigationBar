@@ -9,23 +9,23 @@
 import Foundation
 import UIKit
 
-private var HMNavigationBarManagerAssociationKey: UInt8 = 0
+private var HMNavigationBarAnimatorAssociationKey: UInt8 = 0
 
 //MARK: UIViewController extension
 
 public extension UIViewController {
-    var navigationBarManager: HMNavigationBarManager! {
+    var navigationBarAnimator: HMNavigationBarAnimator! {
         get {
-            var navigationBarManager = objc_getAssociatedObject(self, &HMNavigationBarManagerAssociationKey) as? HMNavigationBarManager
-            if(navigationBarManager == nil) {
-                navigationBarManager = HMNavigationBarManager()
-                navigationBarManager?.view = self.view
-                self.navigationBarManager = navigationBarManager
+            var navigationBarAnimator = objc_getAssociatedObject(self, &HMNavigationBarAnimatorAssociationKey) as? HMNavigationBarAnimator
+            if(navigationBarAnimator == nil) {
+                navigationBarAnimator = NavigationBarAnimator()
+                navigationBarAnimator?.view = self.view
+                self.navigationBarAnimator = navigationBarAnimator
             }
-            return navigationBarManager!
+            return navigationBarAnimator!
         }
         set(newValue) {
-            objc_setAssociatedObject(self, &HMNavigationBarManagerAssociationKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
+            objc_setAssociatedObject(self, &HMNavigationBarAnimatorAssociationKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
         }
     }
 }
@@ -33,59 +33,67 @@ public extension UIViewController {
 
 //MARK: Protocols
 
-public protocol NavBarAnimatable {
-    func animateShowingNavBar()
-    func animateHidingNavBar()
-    func animateNavBarWithParams(scrollingHeight: CGFloat, scrollViewHeight: CGFloat)
-}
-
-public protocol HMManagerSetup {
-    func setupManager(scrollView: UIScrollView, navBar: UIView)
+public protocol HMNavigationBarAnimator: NSObjectProtocol {
+    var view: UIView? { get set }
+    
+    func setup(scrollView: UIScrollView, navBar: UIView)
+    func animate(navBarHeight: CGFloat, scrollViewHeight: CGFloat, navBarAlpha: CGFloat?)
 }
 
 
 //MARK: Implementation
 
-open class HMNavigationBarManager: NSObject, NavBarAnimatable {
+open class NavigationBarAnimator: NSObject, HMNavigationBarAnimator {
     
     var application: UIApplication = UIApplication.shared
-    
-    var scrollView: UIScrollView?
-    var navBar : UIView?
-    
     lazy private(set) var statusBarHeight: CGFloat = self.application.statusBarFrame.size.height
     
-    var navBarHeight: CGFloat?
+    var navBarHeight: CGFloat = 0
     var lastScrollingOffsetY: CGFloat = 0
     var startDraggingOffsetY: CGFloat = 0
-    var view: UIView?
     
-    public func animateShowingNavBar() {
-        UIView.animate(withDuration: 0.1, animations: {
-            self.navBar?.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: self.navBarHeight!)
-            self.navBar?.alpha = 1.0
-            self.scrollView?.frame = CGRect(x: 0, y: self.navBarHeight!, width: self.view.frame.width, height: self.view.frame.height - self.navBarHeight!)
+    weak var scrollView: UIScrollView?
+    weak var navBar : UIView?
+    public weak var view: UIView?
+    
+    private var observer: Any?
+    
+    public func setup(scrollView: UIScrollView, navBar: UIView) {
+        self.scrollView = scrollView
+        self.navBar = navBar
+        self.navBarHeight = (self.navBar?.frame.height)!
+        self.scrollView?.delegate = self
+        
+        self.observer = NotificationCenter.default.addObserver(forName: NSNotification.Name.UIDeviceOrientationDidChange, object: nil, queue: OperationQueue.main, using: { [weak self] _ in
+            UIView.animate(withDuration: 0.0, animations: {
+                self?.navBar?.frame = CGRect(x: 0, y: 0, width: (self?.view?.frame.width)!, height: (self?.navBar?.frame.height)!)
+                self?.navBar?.alpha = (self?.navBar?.frame.height)! / (self?.navBarHeight)!
+            })
         })
     }
     
-    public func animateHidingNavBar() {
-        UIView.animate(withDuration: 0.1, animations: {
-            self.navBar?.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: 0)
-            self.navBar?.alpha = 0.0
-            self.scrollView?.frame = CGRect(x: 0, y: self.statusBarHeight, width: self.view.frame.width, height: self.view.frame.height - self.statusBarHeight)
+    open func animate(navBarHeight: CGFloat, scrollViewHeight: CGFloat, navBarAlpha: CGFloat? = nil) {
+        UIView.animate(withDuration: 0.1, animations: { [weak self] in
+            self?.navBar?.frame = CGRect(x: 0, y: 0, width: (self?.view?.frame.width)!, height: navBarHeight)
+            self?.navBar?.alpha = navBarAlpha != nil ? navBarAlpha! : navBarHeight / (self?.navBarHeight)!
+            self?.scrollView?.frame = CGRect(x: 0, y: scrollViewHeight, width: (self?.view?.frame.width)!, height: (self?.view?.frame.height)! - scrollViewHeight)
         })
     }
     
-    public func animateNavBarWithParams(scrollingHeight: CGFloat, scrollViewHeight: CGFloat) {
-        UIView.animate(withDuration: 0.1, animations: {
-            self.navBar?.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: scrollingHeight)
-            self.navBar?.alpha = scrollingHeight / self.navBarHeight!
-            self.scrollView?.frame = CGRect(x: 0, y: scrollViewHeight, width: self.view.frame.width, height: self.view.frame.height - scrollViewHeight)
-        })
+    internal func showNavBar() {
+        self.animate(navBarHeight: self.navBarHeight, scrollViewHeight: self.navBarHeight)
+    }
+    
+    internal func hideNavBar() {
+        self.animate(navBarHeight: 0, scrollViewHeight: self.statusBarHeight, navBarAlpha: 0)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self.observer!)
     }
 }
 
-extension HMNavigationBarManager: UIScrollViewDelegate {
+extension NavigationBarAnimator: UIScrollViewDelegate {
     
    
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -102,7 +110,7 @@ extension HMNavigationBarManager: UIScrollViewDelegate {
             offsetDelta = max(0, offsetDelta - self.lastScrollingOffsetY + offsetEnd)
         }
         
-        if(offsetEnd < self.navBarHeight!) {
+        if(offsetEnd < self.navBarHeight) {
             return
         }
         var scrollingHeight = (self.navBar?.frame.height)! + offsetDelta
@@ -110,16 +118,16 @@ extension HMNavigationBarManager: UIScrollViewDelegate {
         if self.lastScrollingOffsetY <= offsetEnd && offsetDelta < 0 && (self.navBar?.frame.height)! > 0 as CGFloat {
             scrollingHeight = max(scrollingHeight, 0)
             let scrollViewHeight = scrollingHeight > self.statusBarHeight ? scrollingHeight : self.statusBarHeight
-            self.animateNavBarWithParams(scrollingHeight: scrollingHeight, scrollViewHeight: scrollViewHeight)
+            self.animate(navBarHeight: scrollingHeight, scrollViewHeight: scrollViewHeight)
             
-        } else if !isBouncingTop && self.lastScrollingOffsetY  >= offsetStart && self.lastScrollingOffsetY <= offsetEnd && offsetDelta > 0 && (self.navBar?.frame.height)! < self.navBarHeight! {
+        } else if !isBouncingTop && self.lastScrollingOffsetY  >= offsetStart && self.lastScrollingOffsetY <= offsetEnd && offsetDelta > 0 && (self.navBar?.frame.height)! < self.navBarHeight {
             if(self.startDraggingOffsetY == 0 || scrollView.contentOffset.y < self.startDraggingOffsetY - 250) {
-                scrollingHeight = min(scrollingHeight, self.navBarHeight!)
+                scrollingHeight = min(scrollingHeight, self.navBarHeight)
                 let scrollViewHeight = max(scrollingHeight, self.statusBarHeight)
-                self.animateNavBarWithParams(scrollingHeight: scrollingHeight, scrollViewHeight: scrollViewHeight)
+                self.animate(navBarHeight: scrollingHeight, scrollViewHeight: scrollViewHeight)
             }
         } else if isBouncingTop && self.navBar?.frame.height != self.navBarHeight {
-            self.animateShowingNavBar()
+            self.showNavBar()
         }
         self.lastScrollingOffsetY = scrollView.contentOffset.y
     }
@@ -132,30 +140,14 @@ extension HMNavigationBarManager: UIScrollViewDelegate {
         let offsetEnd = floor(scrollView.contentSize.height - scrollView.bounds.height + scrollView.contentInset.bottom - 0.5)
         
         if(!decelerate || scrollView.contentOffset.y > offsetEnd) {
-            let heightPercentage = (self.navBar?.frame.height)! / self.navBarHeight!
+            let heightPercentage = (self.navBar?.frame.height)! / self.navBarHeight
             if heightPercentage > 0.6 {
-                self.animateShowingNavBar()
+                self.showNavBar()
             } else {
-                self.animateHidingNavBar()
+                self.hideNavBar()
             }
         }
         self.startDraggingOffsetY = 0
     }
 
-}
-
-extension HMNavigationBarManager: HMManagerSetup {
-    public func setupManager(scrollView: UIScrollView, navBar: UIView) {
-        self.scrollView = scrollView
-        self.navBar = navBar
-        self.navBarHeight = self.navBar?.frame.height
-        self.scrollView?.delegate = self
-        
-        NotificationCenter.default.addObserver(forName: NSNotification.Name.UIDeviceOrientationDidChange, object: nil, queue: OperationQueue.main, using: { _ in
-            UIView.animate(withDuration: 0.0, animations: {
-                self.navBar?.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: (self.navBar?.frame.height)!)
-                self.navBar?.alpha = (self.navBar?.frame.height)! / self.navBarHeight!
-            })
-        })
-    }
 }
