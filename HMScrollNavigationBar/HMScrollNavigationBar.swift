@@ -35,6 +35,7 @@ public extension UIViewController {
 
 public protocol HMNavigationBarAnimator: NSObjectProtocol {
     var view: UIView? { get set }
+    var animationDuration: TimeInterval { get set }
     
     func setup(scrollView: UIScrollView, navBar: UIView)
     func animate(navBarHeight: CGFloat, scrollViewHeight: CGFloat, navBarAlpha: CGFloat?)
@@ -56,6 +57,8 @@ open class NavigationBarAnimator: NSObject, HMNavigationBarAnimator {
     weak var navBar : UIView?
     public weak var view: UIView?
     
+    public var animationDuration: TimeInterval = 0.1
+    
     private var observer: Any?
     
     public func setup(scrollView: UIScrollView, navBar: UIView) {
@@ -73,7 +76,7 @@ open class NavigationBarAnimator: NSObject, HMNavigationBarAnimator {
     }
     
     open func animate(navBarHeight: CGFloat, scrollViewHeight: CGFloat, navBarAlpha: CGFloat? = nil) {
-        UIView.animate(withDuration: 0.1, animations: { [weak self] in
+        UIView.animate(withDuration: self.animationDuration, animations: { [weak self] in
             self?.navBar?.frame = CGRect(x: 0, y: 0, width: (self?.view?.frame.width)!, height: navBarHeight)
             self?.navBar?.alpha = navBarAlpha != nil ? navBarAlpha! : navBarHeight / (self?.navBarHeight)!
             self?.scrollView?.frame = CGRect(x: 0, y: scrollViewHeight, width: (self?.view?.frame.width)!, height: (self?.view?.frame.height)! - scrollViewHeight)
